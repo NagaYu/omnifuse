@@ -1,0 +1,50 @@
+# ============================================================
+# OmniFuse 設定ファイル
+# 各機能はトークン未設定でも「ドライラン（下書き保存）」で動作します。
+# 詳しい設定手順は USER_GUIDE.md を参照してください。
+# ============================================================
+
+general:
+  output_dir: output     # 生成物の保存先
+  log_dir: logs          # ログの保存先
+
+# --- AI文章生成（任意）------------------------------------------
+# Claude APIキーを設定すると、文章作成・SNS投稿文の品質が向上します。
+# 未設定でも組み込みテンプレートで動作します。
+anthropic:
+  api_key: ""            # 例: sk-ant-xxxx（環境変数 ANTHROPIC_API_KEY でも可）
+  model: claude-opus-4-8
+
+# --- 1. グラフ整形 [ChartPurify] --------------------------------
+chart:
+  accent_color: "#2563EB"   # アクセントカラー（青）
+  formats: [png, pdf]       # 出力形式
+  dpi: 200
+
+# --- 2. 仕様書デプロイ [DocDeploy] ------------------------------
+docdeploy:
+  target: notion            # notion | confluence | dryrun
+  notion:
+    token: ""               # Notionインテグレーションのトークン（secret_xxx）
+    parent_page_id: ""      # デプロイ先の親ページID
+  confluence:
+    base_url: ""            # 例: https://yourcompany.atlassian.net/wiki
+    email: ""               # Atlassianアカウントのメールアドレス
+    api_token: ""           # AtlassianのAPIトークン
+    space_key: ""           # スペースキー（例: DEV）
+
+# --- 3. 文章作成 [ToneSwitcher] ---------------------------------
+tone:
+  sender_name: ""           # メールの差出人名（例: 株式会社〇〇 山田）
+  signature: ""             # メール署名
+  copy_to_clipboard: true   # 生成後にクリップボードへ自動コピー
+
+# --- 4. SNS一括投稿 [MultiPost] ---------------------------------
+multipost:
+  x:
+    access_token: ""        # X API OAuth2.0ユーザートークン（tweet.write権限）
+  linkedin:
+    access_token: ""        # LinkedInアクセストークン（w_member_social権限）
+    author_urn: ""          # 例: urn:li:person:xxxxxxxx
+  qiita:
+    access_token: ""        # Qiita個人用アクセストークン（write_qiita権限）

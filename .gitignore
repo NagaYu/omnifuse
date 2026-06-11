@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+output/
+logs/
+
+# APIキーを含むためコミット禁止（config.example.yaml を雛形として使用）
+config.yaml
+
+# セットアップ時に自動生成されるもの
+omnifuse.sh
+omnifuse.bat
+.DS_Store
+
+# Claude Codeのローカル設定
+.claude/

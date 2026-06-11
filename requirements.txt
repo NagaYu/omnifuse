@@ -1,0 +1,7 @@
+pandas>=2.0
+openpyxl>=3.1
+matplotlib>=3.8
+requests>=2.31
+PyYAML>=6.0
+# 任意: Claude APIによる高品質な文章生成を使う場合
+anthropic>=0.40 ; python_version >= "3.8"
