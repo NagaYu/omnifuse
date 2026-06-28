@@ -1,34 +1,34 @@
 # OmniFuse
 
-ビジネス自動化コアCLIツール。コマンド一発（または対話メニュー）で4つの定型業務を自動化します。
+A business automation core CLI tool. Automate four routine tasks with a single command (or through an interactive menu).
 
-| コマンド | 機能 |
+| Command | Feature |
 |---|---|
-| `omnifuse chart <file>` | **ChartPurify** — Excel/CSVをビジネス品質のグラフ（PNG/PDF）に整形 |
-| `omnifuse doc` | **DocDeploy** — Gitログ/MarkdownをNotion/Confluenceへ自動デプロイ |
-| `omnifuse tone <md>` | **ToneSwitcher** — 完了報告をSlack/Teams/メールの3トーンで同時生成 |
-| `omnifuse post <src>` | **MultiPost** — 記事からX/LinkedIn/Qiita投稿文を一括生成・予約投稿 |
+| `omnifuse chart <file>` | **ChartPurify** — Turn Excel/CSV into business-quality charts (PNG/PDF) |
+| `omnifuse doc` | **DocDeploy** — Auto-deploy Git logs / Markdown to Notion / Confluence |
+| `omnifuse tone <md>` | **ToneSwitcher** — Generate a completion report in 3 tones at once (Slack / Teams / email) |
+| `omnifuse post <src>` | **MultiPost** — Generate and schedule posts for X / LinkedIn / Qiita from a single article |
 
-## クイックスタート
+## Quick Start
 
 ```bash
-# 1. セットアップ（依存関係の自動チェック＆一括インストール）
+# 1. Setup (auto-checks dependencies and installs everything)
 bash setup.sh          # Mac / Linux
 setup.bat              # Windows
 
-# 2. 起動（引数なしで対話メニュー）
+# 2. Launch (no arguments → interactive menu)
 ./omnifuse.sh
 
-# 3. サンプルで試す
+# 3. Try it with the samples
 ./omnifuse.sh chart samples/sample_sales.csv
 ./omnifuse.sh tone samples/sample_report.md
 ```
 
-- APIキーなしでも全機能がドライラン（`output/` への下書き保存）で動作します
-- 詳しいセットアップ手順・APIキーの設定方法は **[USER_GUIDE.md](USER_GUIDE.md)** を参照
-- Claude APIキーを `config.yaml` に設定すると、文章生成がAIによる高品質モードになります
+- All features work without API keys, running in dry-run mode (drafts are saved to `output/`)
+- For detailed setup steps and how to configure API keys, see **[USER_GUIDE.md](USER_GUIDE.md)**
+- Set a Claude API key in `config.yaml` to switch text generation to high-quality AI mode
 
-## 動作環境
+## Requirements
 
 - Python 3.10+
 - macOS / Linux / Windows

@@ -1,85 +1,85 @@
-# OmniFuse ユーザーガイド
+# OmniFuse User Guide
 
-**OmniFuse（オムニフューズ）** は、面倒なビジネス作業をコマンド一発で自動化するツールです。
-プログラミングの知識は不要です。このガイドの順番どおりに進めれば、誰でも使い始められます。
+**OmniFuse** is a tool that automates tedious business tasks with a single command.
+No programming knowledge is required. If you follow this guide in order, anyone can get started.
 
 ---
 
-## 📌 OmniFuseでできること
+## 📌 What OmniFuse Can Do
 
 ```
                         ┌─────────────────────────────┐
                         │         OmniFuse            │
-                        │   （対話メニューで選ぶだけ）   │
+                        │   (just pick from the menu) │
                         └──────────────┬──────────────┘
         ┌────────────────┬─────────────┼─────────────────┐
         ▼                ▼             ▼                 ▼
  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
- │ 1.グラフ整形 │ │ 2.仕様書    │ │ 3.文章作成   │ │ 4.SNS投稿   │
- │             │ │   デプロイ   │ │             │ │             │
- │ Excel/CSV   │ │ Gitログ/MD  │ │ 報告MD      │ │ 記事URL等   │
+ │ 1.Chart     │ │ 2.Doc       │ │ 3.Tone      │ │ 4.Multi     │
+ │   Purify    │ │   Deploy    │ │   Switcher  │ │   Post      │
+ │ Excel/CSV   │ │ Git log/MD  │ │ report MD   │ │ article URL │
  │   ↓        │ │   ↓        │ │   ↓        │ │   ↓        │
- │ 美しいPDF/  │ │ Notion/    │ │ Slack/Teams │ │ X/LinkedIn/ │
- │ PNGグラフ   │ │ Confluence │ │ /メール3種   │ │ Qiita下書き │
+ │ polished    │ │ Notion/    │ │ Slack/Teams │ │ X/LinkedIn/ │
+ │ PDF/PNG     │ │ Confluence │ │ /email x3   │ │ Qiita draft │
  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
-| 機能 | 入力 | 出力 |
-|------|------|------|
-| **1. グラフ整形** | Excel / CSV | ビジネス品質のグラフ（PNG・PDF） |
-| **2. 仕様書デプロイ** | Gitログ / Markdown | Notion・Confluenceのページ |
-| **3. 文章作成** | 完了報告のMarkdown | Slack・Teams・メール用の3文面 |
-| **4. SNS一括投稿** | 記事URL・テキスト | X・LinkedIn・Qiita用の投稿文（予約投稿対応） |
+| Feature | Input | Output |
+|---------|-------|--------|
+| **1. Chart Purify** | Excel / CSV | Business-quality charts (PNG & PDF) |
+| **2. Doc Deploy** | Git log / Markdown | Notion / Confluence pages |
+| **3. Tone Switcher** | Completion report (Markdown) | 3 messages for Slack / Teams / email |
+| **4. Multi Post** | Article URL / text | Posts for X / LinkedIn / Qiita (with scheduling) |
 
-> 💡 **APIキーを設定しなくても使えます。** その場合、結果はすべて `output/` フォルダに
-> 下書きとして保存されます（ドライランモード）。
+> 💡 **You can use it without setting up API keys.** In that case, results are all saved
+> as drafts in the `output/` folder (dry-run mode).
 
 ---
 
-## 🚀 セットアップ（最初に1回だけ）
+## 🚀 Setup (just once, the first time)
 
-### 手順1: Pythonの確認
+### Step 1: Check Python
 
-OmniFuseには **Python 3.10以上** が必要です。
+OmniFuse requires **Python 3.10 or later**.
 
-- **Mac**: 最初から入っていることが多いです。ターミナルで `python3 --version` と打って確認。
-- **Windows**: [python.org](https://www.python.org/downloads/) からダウンロード。
-  ⚠️ インストール画面で「**Add Python to PATH**」に必ずチェックを入れてください。
+- **Mac**: Often pre-installed. Run `python3 --version` in the terminal to check.
+- **Windows**: Download from [python.org](https://www.python.org/downloads/).
+  ⚠️ Be sure to check "**Add Python to PATH**" on the installer screen.
 
-### 手順2: セットアップスクリプトを実行
+### Step 2: Run the setup script
 
 ```
 ┌──────────────────────────────────────────────┐
-│  Mac / Linux の場合                           │
+│  On Mac / Linux                              │
 │                                              │
-│  1. ターミナルを開く                           │
-│  2. このフォルダに移動して以下を実行：           │
+│  1. Open a terminal                          │
+│  2. Move to this folder and run:             │
 │                                              │
 │     bash setup.sh                            │
 │                                              │
 ├──────────────────────────────────────────────┤
-│  Windows の場合                               │
+│  On Windows                                  │
 │                                              │
-│  1. setup.bat をダブルクリック                 │
-│     （または コマンドプロンプトで setup.bat）    │
+│  1. Double-click setup.bat                   │
+│     (or run setup.bat in Command Prompt)     │
 └──────────────────────────────────────────────┘
 ```
 
-スクリプトが**すべて自動で**やってくれます：
+The script does **everything automatically**:
 
 ```
- setup.sh / setup.bat の処理フロー
+ setup.sh / setup.bat processing flow
 
- [Pythonチェック] → [仮想環境を作成] → [ライブラリを一括インストール]
+ [Check Python] → [Create virtual env] → [Install libraries at once]
         │                                      │
         │            pandas / matplotlib / openpyxl / requests ...
         ▼                                      ▼
- [動作チェック] ──────────────────→ [起動コマンドを作成] → 🎉完了
+ [Verify it works] ─────────────────→ [Create launch command] → 🎉 Done
 ```
 
-最後に「🎉 セットアップが完了しました！」と表示されれば成功です。
+If "🎉 Setup complete!" appears at the end, it succeeded.
 
-### 手順3: 起動してみる
+### Step 3: Launch it
 
 ```bash
 # Mac / Linux
@@ -89,205 +89,205 @@ OmniFuseには **Python 3.10以上** が必要です。
 omnifuse
 ```
 
-引数なしで実行すると、このような**対話メニュー**が表示されます：
+Running it with no arguments shows this **interactive menu**:
 
 ```
 ═══════════════════════════════════════════════
- 何を自動化しますか？
+ What would you like to automate?
 ═══════════════════════════════════════════════
-  1. グラフ整形      … Excel/CSVを美しいグラフ(PDF/画像)に
-  2. 仕様書デプロイ  … Gitログ/MarkdownをNotion/Confluenceへ
-  3. 文章作成        … 完了報告をSlack/Teams/メール用に変換
-  4. SNS一括投稿     … 記事からX/LinkedIn/Qiita投稿文を生成
-  q. 終了
+  1. Chart Purify   … Excel/CSV into beautiful charts (PDF/image)
+  2. Doc Deploy     … Git log/Markdown to Notion/Confluence
+  3. Tone Switcher  … Convert a report for Slack/Teams/email
+  4. Multi Post     … Generate X/LinkedIn/Qiita posts from an article
+  q. Quit
 ───────────────────────────────────────────────
- 番号を選んでください >
+ Enter a number >
 ```
 
-番号を入力して、画面の質問に答えるだけです。
+Just enter a number and answer the on-screen prompts.
 
 ---
 
-## 📖 各機能の使い方
+## 📖 How to Use Each Feature
 
-### 1️⃣ グラフ整形（ChartPurify）
+### 1️⃣ Chart Purify
 
-ExcelやCSVの表を、そのまま会議資料に使える品質のグラフに変換します。
+Convert Excel or CSV tables into presentation-ready charts.
 
 ```bash
-./omnifuse.sh chart 売上データ.csv
-./omnifuse.sh chart 売上データ.xlsx --title "月次売上推移" --type bar
+./omnifuse.sh chart sales_data.csv
+./omnifuse.sh chart sales_data.xlsx --title "Monthly Sales Trend" --type bar
 ```
 
 ```
- 売上データ.csv                     output/charts/売上データ_xxxx.png
+ sales_data.csv                     output/charts/sales_data_xxxx.png
  ┌──────────────┐                 ┌──────────────────────┐
- │ 月, 売上, 利益 │                 │  月次売上推移          │
- │ 4月,1250,310 │   ──────────▶   │  ▇▇  ▂▂ （青+グレー）  │
- │ 5月,1380,355 │    自動整形      │  ▇▇▇ ▂▂▂ 游ゴシック   │
- │ ...          │                 │  4月  5月  6月 ...     │
+ │ Month,Sales..│                 │  Monthly Sales Trend  │
+ │ Apr,1250,310 │   ──────────▶   │  ▇▇  ▂▂ (blue+gray)   │
+ │ May,1380,355 │   auto-format   │  ▇▇▇ ▂▂▂ Yu Gothic    │
+ │ ...          │                 │  Apr  May  Jun ...    │
  └──────────────┘                 └──────────────────────┘
-                                   PNG と PDF の2形式で保存
+                                   Saved as both PNG and PDF
 ```
 
-- 配色は **モノトーン＋青のアクセント**、フォントは **游ゴシック**（無い場合は自動代替）
-- `--type` を省略すると、データ量に応じて棒/折れ線を自動選択
-- 出力先: `output/charts/`
+- Colors use a **monochrome palette + a blue accent**; the font is **Yu Gothic** (falls back automatically if unavailable)
+- Omitting `--type` auto-selects bar/line based on the amount of data
+- Output: `output/charts/`
 
-### 2️⃣ 仕様書デプロイ（DocDeploy）
+### 2️⃣ Doc Deploy
 
-GitのコミットログやMarkdownを、読みやすい仕様書ページとしてNotion/Confluenceに自動投稿します。
+Auto-publish Git commit logs or Markdown as readable spec pages to Notion / Confluence.
 
 ```bash
-# Gitのコミットログから更新履歴ページを作る（Gitリポジトリ内で実行）
+# Build an update-history page from Git commit logs (run inside a Git repo)
 ./omnifuse.sh doc --source git
 
-# Markdownファイルから仕様書ページを作る
-./omnifuse.sh doc --source md --input 仕様書.md --title "API仕様書 v2"
+# Build a spec page from a Markdown file
+./omnifuse.sh doc --source md --input spec.md --title "API Spec v2"
 ```
 
-トークン未設定の場合は `output/docs/` にプレビューと送信予定データが保存されます。
+If no token is set, a preview and the payload to be sent are saved to `output/docs/`.
 
-### 3️⃣ 文章作成（ToneSwitcher）
+### 3️⃣ Tone Switcher
 
-1つの完了報告から、送り先に合わせた3種類の文章を同時生成します。
+Generate three versions of a message from a single completion report, tailored to each recipient.
 
 ```
-                              ┌──▶ 😊 Slack版（フランク・絵文字つき）
- 完了報告.md ──[OmniFuse]──┼──▶ 📋 Teams版（業務連絡フォーマット）
-                              └──▶ ✉️  メール版（クライアント向け敬語）
+                              ┌──▶ 😊 Slack version (casual, with emoji)
+ report.md ──[OmniFuse]────┼──▶ 📋 Teams version (business-memo format)
+                              └──▶ ✉️  Email version (polite, client-facing)
 ```
 
 ```bash
-./omnifuse.sh tone 完了報告.md
-./omnifuse.sh tone 完了報告.md --clipboard email   # メール版をコピー
+./omnifuse.sh tone report.md
+./omnifuse.sh tone report.md --clipboard email   # copy the email version
 ```
 
-- 3種類すべて `output/drafts/` に保存
-- 指定した版が**クリップボードに自動コピー**されるので、すぐ貼り付けられます
+- All three versions are saved to `output/drafts/`
+- The chosen version is **copied to the clipboard automatically**, ready to paste
 
-### 4️⃣ SNS一括投稿（MultiPost）
+### 4️⃣ Multi Post
 
-1つの記事から、各SNSの文化に合わせた投稿文を一括生成します。
+Generate posts from a single article, tailored to each social platform's culture.
 
 ```bash
-# 記事URLから生成（下書きのみ）
+# Generate from an article URL (drafts only)
 ./omnifuse.sh post "https://example.com/blog/article"
 
-# 予約投稿（トークン設定済みの場合）
-./omnifuse.sh post 記事.md --when "2026-06-15 09:00"
+# Schedule a post (when a token is configured)
+./omnifuse.sh post article.md --when "2026-06-15 09:00"
 
-# 予約キューの実行（時刻を過ぎた投稿を送信）
+# Run the scheduled queue (send posts past their scheduled time)
 ./omnifuse.sh post --run-queue
 ```
 
-| プラットフォーム | 生成される文面 |
+| Platform | Generated content |
 |---|---|
-| **X** | 140文字以内に自動調整した告知文 |
-| **LinkedIn** | ビジネス調の紹介文＋ハッシュタグ |
-| **Qiita** | 技術記事のMarkdown下書き |
+| **X** | Announcement auto-trimmed to 140 characters |
+| **LinkedIn** | Business-toned intro with hashtags |
+| **Qiita** | Markdown draft for a technical article |
 
-> ⏰ 予約投稿は `--run-queue` 実行時に送信されます。毎朝自動実行したい場合は
-> Macなら `crontab`、Windowsなら「タスクスケジューラ」に登録してください。
+> ⏰ Scheduled posts are sent when you run `--run-queue`. To run it automatically every morning,
+> register it with `crontab` on Mac or "Task Scheduler" on Windows.
 
 ---
 
-## 🔑 APIキーの設定方法
+## 🔑 How to Configure API Keys
 
-すべて任意です。**使いたい機能のぶんだけ**設定してください。
-設定はすべて `config.yaml` をメモ帳などで開いて書き込みます。
+All of these are optional. Configure **only the ones you need**.
+All settings are written into `config.yaml`, which you can open in any text editor.
 
 ```
- config.yaml の編集イメージ
+ Editing config.yaml
 
    anthropic:
-     api_key: ""   ←  この "" の間にキーを貼り付ける
-                       例: api_key: "sk-ant-api03-xxxx"
+     api_key: ""   ←  paste your key between the quotes
+                       e.g. api_key: "sk-ant-api03-xxxx"
 ```
 
-### 🤖 Claude API（文章の品質アップ・任意）
+### 🤖 Claude API (better text quality, optional)
 
-文章作成とSNS投稿文の生成をAIで行い、品質を大幅に向上させます。
+Generates the Tone Switcher and Multi Post text with AI, greatly improving quality.
 
-1. [https://console.anthropic.com/](https://console.anthropic.com/) にアクセスしてアカウント作成
-2. 左メニューの **API Keys** → **Create Key** をクリック
-3. 表示されたキー（`sk-ant-` で始まる）をコピー
-4. `config.yaml` の `anthropic:` → `api_key:` に貼り付け
+1. Go to [https://console.anthropic.com/](https://console.anthropic.com/) and create an account
+2. Click **API Keys** → **Create Key** in the left menu
+3. Copy the displayed key (starts with `sk-ant-`)
+4. Paste it into `anthropic:` → `api_key:` in `config.yaml`
 
 ### 📘 Notion
 
-1. [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations) で「新しいインテグレーション」を作成
-2. 表示された **シークレット**（`secret_` で始まる）をコピー → `docdeploy:` → `notion:` → `token:` へ
-3. デプロイ先にしたいNotionページを開き、右上「…」→「接続」→ 作成したインテグレーションを追加
-4. ページURLの末尾32文字（英数字）が **parent_page_id** です
+1. Create a "New integration" at [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations)
+2. Copy the displayed **secret** (starts with `secret_`) into `docdeploy:` → `notion:` → `token:`
+3. Open the Notion page you want to deploy to, click "…" → "Connections" → add the integration you created
+4. The last 32 characters (alphanumeric) of the page URL is the **parent_page_id**
    ```
    https://www.notion.so/My-Page-1234567890abcdef1234567890abcdef
-                                └────────── この部分 ──────────┘
+                                └────────── this part ──────────┘
    ```
 
 ### 📗 Confluence
 
-1. [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) で「APIトークンを作成」
-2. `config.yaml` の `confluence:` に以下を設定：
-   - `base_url`: 例 `https://あなたの会社.atlassian.net/wiki`
-   - `email`: Atlassianのログインメールアドレス
-   - `api_token`: 作成したトークン
-   - `space_key`: スペースのキー（スペースURLの `/spaces/XXX/` 部分）
-3. `docdeploy:` → `target:` を `confluence` に変更
+1. Create an API token at [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+2. Set the following under `confluence:` in `config.yaml`:
+   - `base_url`: e.g. `https://yourcompany.atlassian.net/wiki`
+   - `email`: your Atlassian login email
+   - `api_token`: the token you created
+   - `space_key`: the space key (the `/spaces/XXX/` part of the space URL)
+3. Change `docdeploy:` → `target:` to `confluence`
 
-### 🐦 X（旧Twitter）
+### 🐦 X (formerly Twitter)
 
-1. [https://developer.x.com/](https://developer.x.com/) でデベロッパー登録（無料プランで可）
-2. アプリを作成し、**OAuth 2.0** の設定で `tweet.write` 権限を有効化
-3. ユーザーアクセストークンを取得 → `multipost:` → `x:` → `access_token:` へ
+1. Register as a developer at [https://developer.x.com/](https://developer.x.com/) (the free plan works)
+2. Create an app and enable the `tweet.write` scope in the **OAuth 2.0** settings
+3. Obtain a user access token → put it in `multipost:` → `x:` → `access_token:`
 
 ### 💼 LinkedIn
 
-1. [https://developer.linkedin.com/](https://developer.linkedin.com/) でアプリ作成
-2. **w_member_social** 権限のアクセストークンを取得 → `linkedin:` → `access_token:` へ
-3. 自分のプロフィールURN（`urn:li:person:xxxx`）を `author_urn:` へ
+1. Create an app at [https://developer.linkedin.com/](https://developer.linkedin.com/)
+2. Obtain an access token with the **w_member_social** scope → put it in `linkedin:` → `access_token:`
+3. Put your profile URN (`urn:li:person:xxxx`) in `author_urn:`
 
 ### 📝 Qiita
 
-1. Qiitaにログイン → [設定 → アプリケーション](https://qiita.com/settings/applications)
-2. 「新しくトークンを発行する」で **write_qiita** にチェックして発行
-3. 表示されたトークンを `qiita:` → `access_token:` へ
+1. Log in to Qiita → [Settings → Applications](https://qiita.com/settings/applications)
+2. Click "Generate new token", check **write_qiita**, and issue it
+3. Put the displayed token in `qiita:` → `access_token:`
 
 ---
 
-## ❓ よくあるトラブル
+## ❓ Troubleshooting
 
-| 症状 | 解決方法 |
-|------|---------|
-| `Python が見つかりません` | Pythonをインストール後、PCを再起動して再実行 |
-| 文字化けしたグラフが出る | 游ゴシック等の日本語フォントが無い環境です。`config.yaml` の `font_candidates` に手持ちのフォント名を追加 |
-| CSVが読めない | Excelで保存し直すか、文字コードを UTF-8 / Shift-JIS にしてください（両対応） |
-| `Notion APIエラー (404)` | parent_page_id の誤り、またはページにインテグレーションが「接続」されていません |
-| `X APIエラー (403)` | トークンに `tweet.write` 権限がありません。アプリ設定を確認 |
-| クリップボードにコピーされない | Linuxでは `xclip` のインストールが必要です: `sudo apt install xclip` |
-| その他のエラー | `logs/omnifuse.log` に詳細が記録されています |
+| Symptom | Solution |
+|---------|----------|
+| `Python not found` | Install Python, restart your PC, then try again |
+| Charts come out with garbled text | No Japanese font (e.g. Yu Gothic) is installed. Add a font name you have to `font_candidates` in `config.yaml` |
+| CSV can't be read | Re-save it in Excel, or set the encoding to UTF-8 / Shift-JIS (both are supported) |
+| `Notion API error (404)` | Wrong parent_page_id, or the integration isn't "connected" to the page |
+| `X API error (403)` | The token lacks the `tweet.write` scope. Check the app settings |
+| Clipboard copy doesn't work | On Linux, `xclip` must be installed: `sudo apt install xclip` |
+| Other errors | Details are recorded in `logs/omnifuse.log` |
 
 ---
 
-## 📁 フォルダ構成
+## 📁 Folder Structure
 
 ```
 OmniFuse/
-├── omnifuse.sh / omnifuse.bat   ← 起動コマンド（セットアップ時に生成）
-├── setup.sh / setup.bat         ← 環境構築スクリプト
-├── config.yaml                  ← 設定ファイル（APIキー等）
-├── USER_GUIDE.md                ← このガイド
-├── samples/                     ← お試し用サンプルデータ
-├── output/                      ← 生成物はすべてここ
-│   ├── charts/                  …グラフ
-│   ├── docs/                    …仕様書プレビュー
-│   ├── drafts/                  …文章下書き
-│   ├── posts/                   …SNS投稿文
-│   └── post_queue.json          …予約投稿キュー
-└── logs/omnifuse.log            ← トラブル時はここを確認
+├── omnifuse.sh / omnifuse.bat   ← launch command (generated during setup)
+├── setup.sh / setup.bat         ← environment setup scripts
+├── config.yaml                  ← config file (API keys, etc.)
+├── USER_GUIDE.md                ← this guide
+├── samples/                     ← sample data to try
+├── output/                      ← all generated files go here
+│   ├── charts/                  …charts
+│   ├── docs/                    …spec previews
+│   ├── drafts/                  …text drafts
+│   ├── posts/                   …social posts
+│   └── post_queue.json          …scheduled-post queue
+└── logs/omnifuse.log            ← check here when something goes wrong
 ```
 
-困ったときはまず `samples/` のサンプルで動作確認してみてください：
+When in doubt, first try the samples in `samples/` to confirm it works:
 
 ```bash
 ./omnifuse.sh chart samples/sample_sales.csv
