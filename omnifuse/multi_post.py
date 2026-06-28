@@ -1,9 +1,9 @@
-"""[MultiPost] 1つの元記事URL/テキストから X・LinkedIn・Qiita 用の投稿文を
-一括生成し、公式API経由で即時/予約投稿する。
+"""[MultiPost] Generate posts for X, LinkedIn, and Qiita from a single source
+article (URL/text) and publish them immediately or on a schedule via official APIs.
 
-- 予約投稿はローカルキュー (output/post_queue.json) に保存し、
-  `omnifuse post --run-queue` で送信時刻を過ぎたものを投稿する。
-- トークン未設定のプラットフォームは下書き保存のみ（ドライラン）。
+- Scheduled posts are stored in a local queue (output/post_queue.json) and sent
+  by `omnifuse post --run-queue` once their scheduled time has passed.
+- Platforms without a configured token only get a saved draft (dry-run).
 """
 
 import json
@@ -24,7 +24,7 @@ PLATFORMS = ["x", "linkedin", "qiita"]
 X_LIMIT = 140
 
 
-# ---------------------------------------------------------------- 入力取得
+# ---------------------------------------------------------------- input
 
 class _TextExtractor(HTMLParser):
     SKIP = {"script", "style", "nav", "footer", "header"}
@@ -56,12 +56,12 @@ class _TextExtractor(HTMLParser):
 
 
 def fetch_source(source: str) -> dict:
-    """URLまたはテキスト/ファイルから {title, body, url} を取得する。"""
+    """Return {title, body, url} from a URL, text, or file."""
     if re.match(r"^https?://", source):
         resp = requests.get(source, timeout=30,
                             headers={"User-Agent": "OmniFuse/1.0"})
         if resp.status_code >= 400:
-            raise RuntimeError(f"記事の取得に失敗しました ({resp.status_code}): {source}")
+            raise RuntimeError(f"Failed to fetch the article ({resp.status_code}): {source}")
         parser = _TextExtractor()
         parser.feed(resp.text)
         body = " ".join(parser.chunks)
@@ -71,14 +71,14 @@ def fetch_source(source: str) -> dict:
         title_match = re.search(r"^#\s+(.+)", text, re.M)
         if title_match:
             title = title_match.group(1).strip()
-            text = text.replace(title_match.group(0), "", 1)  # 本文との重複を防ぐ
+            text = text.replace(title_match.group(0), "", 1)  # avoid duplicating it in the body
         else:
             title = Path(source).stem
         return {"title": title, "body": text.strip()[:4000], "url": ""}
     return {"title": source[:40], "body": source, "url": ""}
 
 
-# -------------------------------------------------------- テンプレート生成
+# -------------------------------------------------------- template generation
 
 def _summary(body: str, limit: int) -> str:
     text = re.sub(r"\s+", " ", re.sub(r"[#>*`\[\]]", "", body)).strip()
@@ -87,60 +87,60 @@ def _summary(body: str, limit: int) -> str:
 
 def _template_x(src: dict) -> str:
     url = src["url"]
-    # URL分（+改行）を差し引いて140文字に収める
+    # Reserve room for the URL (+ newline) so the whole thing fits in 140 chars
     reserve = (len(url) + 1) if url else 0
-    head = f"【{src['title']}】"
+    head = f"[{src['title']}]"
     room = X_LIMIT - reserve - len(head) - 1
     text = head + "\n" + _summary(src["body"], max(room, 0))
     if url:
         text += "\n" + url
-    # 最終ガード
+    # Final guard
     return text[:X_LIMIT] if not url else text
 
 
 def _template_linkedin(src: dict) -> str:
     lines = [f"{src['title']}", "",
              _summary(src["body"], 300), "",
-             "ビジネスの現場で同じ課題をお持ちの方の参考になれば幸いです。",
-             "ご意見・ご感想をコメントでお聞かせください。"]
+             "I hope this is helpful to anyone facing the same challenges in their work.",
+             "Share your thoughts and feedback in the comments."]
     if src["url"]:
-        lines += ["", f"詳細はこちら: {src['url']}"]
-    lines += ["", "#業務効率化 #DX #自動化"]
+        lines += ["", f"Read more: {src['url']}"]
+    lines += ["", "#productivity #DX #automation"]
     return "\n".join(lines)
 
 
 def _template_qiita(src: dict) -> dict:
-    body_lines = ["## 概要", "", _summary(src["body"], 500), ""]
+    body_lines = ["## Overview", "", _summary(src["body"], 500), ""]
     if src["url"]:
-        body_lines += ["## 参考", "", f"- 元記事: {src['url']}", ""]
-    body_lines += ["## ポイント", "",
-                   "- （ここに技術的なポイントを追記してください）", ""]
+        body_lines += ["## Reference", "", f"- Source article: {src['url']}", ""]
+    body_lines += ["## Key Points", "",
+                   "- (add your technical key points here)", ""]
     return {
         "title": src["title"],
         "body": "\n".join(body_lines),
-        "tags": [{"name": "自動化"}, {"name": "業務効率化"}],
+        "tags": [{"name": "automation"}, {"name": "productivity"}],
     }
 
 
 _AI_SYSTEM = (
-    "あなたはSNSマーケティングと技術記事執筆のプロです。"
-    "出力は投稿本文のみとし、前置きや説明は不要です。"
+    "You are a professional social-media marketer and technical writer. "
+    "Output only the post body, with no preamble or explanation."
 )
 
 
 def _ai_generate(config: dict, src: dict) -> dict:
     posts = {}
     prompts = {
-        "x": f"次の記事から、X（旧Twitter）向けの投稿文を日本語で1つ作成してください。"
-             f"URL込みで全体を{X_LIMIT}文字以内に必ず収めてください。\n\n"
-             f"タイトル: {src['title']}\nURL: {src['url']}\n本文: {src['body'][:2000]}",
-        "linkedin": "次の記事から、LinkedIn向けのビジネス調の投稿文（日本語、300〜600字、"
-                    f"ハッシュタグ付き）を作成してください。\n\n"
-                    f"タイトル: {src['title']}\nURL: {src['url']}\n本文: {src['body'][:2000]}",
-        "qiita": "次の記事から、Qiita向け技術記事の本文（Markdown、見出し付き）を"
-                 "作成してください。1行目にタイトルだけを書き、2行目以降を本文として"
-                 f"ください。\n\nタイトル: {src['title']}\nURL: {src['url']}\n"
-                 f"本文: {src['body'][:2000]}",
+        "x": f"From the article below, write one post for X (formerly Twitter). "
+             f"The entire post, including the URL, must fit within {X_LIMIT} characters.\n\n"
+             f"Title: {src['title']}\nURL: {src['url']}\nBody: {src['body'][:2000]}",
+        "linkedin": "From the article below, write a business-toned LinkedIn post "
+                    "(300-600 characters, with hashtags).\n\n"
+                    f"Title: {src['title']}\nURL: {src['url']}\nBody: {src['body'][:2000]}",
+        "qiita": "From the article below, write the body of a technical article for Qiita "
+                 "(Markdown, with headings). Put only the title on the first line and the "
+                 f"body from the second line onward.\n\nTitle: {src['title']}\n"
+                 f"URL: {src['url']}\nBody: {src['body'][:2000]}",
     }
     for platform, prompt in prompts.items():
         text = llm.generate(config, _AI_SYSTEM, prompt)
@@ -150,7 +150,7 @@ def _ai_generate(config: dict, src: dict) -> dict:
 
 
 def generate_posts(config: dict, source: str) -> dict:
-    """3プラットフォーム分の投稿文を生成する。"""
+    """Generate posts for all three platforms."""
     src = fetch_source(source)
     posts = _ai_generate(config, src) if llm.is_available(config) else {}
 
@@ -162,17 +162,17 @@ def generate_posts(config: dict, source: str) -> dict:
         qiita = _template_qiita(src)
         posts["qiita"] = qiita
     else:
-        # AI出力（1行目タイトル）をQiita用構造に変換
+        # Convert the AI output (title on line 1) into the Qiita structure
         lines = posts["qiita"].splitlines()
         posts["qiita"] = {
             "title": lines[0].lstrip("# ").strip() if lines else src["title"],
             "body": "\n".join(lines[1:]).strip() or src["body"][:500],
-            "tags": [{"name": "自動化"}, {"name": "業務効率化"}],
+            "tags": [{"name": "automation"}, {"name": "productivity"}],
         }
     return posts
 
 
-# ---------------------------------------------------------------- API投稿
+# ---------------------------------------------------------------- API posting
 
 def _post_x(text: str, cfg: dict) -> str:
     resp = requests.post(
@@ -182,8 +182,8 @@ def _post_x(text: str, cfg: dict) -> str:
         json={"text": text}, timeout=30,
     )
     if resp.status_code >= 400:
-        raise RuntimeError(f"X APIエラー ({resp.status_code}): {resp.text[:300]}")
-    return f"投稿ID: {resp.json().get('data', {}).get('id', '?')}"
+        raise RuntimeError(f"X API error ({resp.status_code}): {resp.text[:300]}")
+    return f"post ID: {resp.json().get('data', {}).get('id', '?')}"
 
 
 def _post_linkedin(text: str, cfg: dict) -> str:
@@ -204,8 +204,8 @@ def _post_linkedin(text: str, cfg: dict) -> str:
         json=payload, timeout=30,
     )
     if resp.status_code >= 400:
-        raise RuntimeError(f"LinkedIn APIエラー ({resp.status_code}): {resp.text[:300]}")
-    return f"投稿ID: {resp.headers.get('x-restli-id', '?')}"
+        raise RuntimeError(f"LinkedIn API error ({resp.status_code}): {resp.text[:300]}")
+    return f"post ID: {resp.headers.get('x-restli-id', '?')}"
 
 
 def _post_qiita(item: dict, cfg: dict) -> str:
@@ -218,8 +218,8 @@ def _post_qiita(item: dict, cfg: dict) -> str:
         timeout=30,
     )
     if resp.status_code >= 400:
-        raise RuntimeError(f"Qiita APIエラー ({resp.status_code}): {resp.text[:300]}")
-    return resp.json().get("url", "(URL不明)")
+        raise RuntimeError(f"Qiita API error ({resp.status_code}): {resp.text[:300]}")
+    return resp.json().get("url", "(URL unknown)")
 
 
 def _has_token(config: dict, platform: str) -> bool:
@@ -235,7 +235,7 @@ def _post_now(config: dict, platform: str, content) -> str:
     return _post_qiita(content, cfg)
 
 
-# ------------------------------------------------------------ キュー管理
+# ------------------------------------------------------------ queue management
 
 def _queue_path(config: dict) -> Path:
     path = Path(config["multipost"]["queue_file"])
@@ -249,7 +249,7 @@ def _load_queue(config: dict) -> list[dict]:
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            logger.warning("キューが壊れていたため初期化します: %s", path)
+            logger.warning("Queue was corrupted; resetting it: %s", path)
     return []
 
 
@@ -259,10 +259,10 @@ def _save_queue(config: dict, queue: list[dict]) -> None:
 
 
 def schedule_posts(config: dict, source: str, when: str | None = None) -> str:
-    """投稿文を生成し、即時投稿または予約キューへ登録する。"""
+    """Generate posts and either publish immediately or add them to the queue."""
     posts = generate_posts(config, source)
 
-    # 下書きは常に保存（確認・手動投稿用）
+    # Always save drafts (for review / manual posting)
     out_dir = ensure_output_dir(config) / "posts"
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -277,14 +277,14 @@ def schedule_posts(config: dict, source: str, when: str | None = None) -> str:
             scheduled_at = datetime.strptime(when, "%Y-%m-%d %H:%M")
         except ValueError:
             raise ValueError(
-                f"日時の形式が正しくありません（例: 2026-06-15 09:00）: {when}")
+                f"Invalid date/time format (e.g. 2026-06-15 09:00): {when}")
 
-    messages = [f"📝 3プラットフォーム分の下書きを保存しました: {out_dir}/"]
+    messages = [f"📝 Saved drafts for all 3 platforms: {out_dir}/"]
     queue = _load_queue(config)
     queued_count = 0
     for platform, content in posts.items():
         if not _has_token(config, platform):
-            messages.append(f"   - {platform}: トークン未設定のため下書きのみ")
+            messages.append(f"   - {platform}: draft only (no token configured)")
             continue
         if scheduled_at:
             queue.append({
@@ -294,21 +294,21 @@ def schedule_posts(config: dict, source: str, when: str | None = None) -> str:
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
             })
             queued_count += 1
-            messages.append(f"   - {platform}: {when} に予約しました")
+            messages.append(f"   - {platform}: scheduled for {when}")
         else:
             result = _post_now(config, platform, content)
-            messages.append(f"   - {platform}: ✅ 投稿しました（{result}）")
+            messages.append(f"   - {platform}: ✅ posted ({result})")
     _save_queue(config, queue)
     if queued_count:
-        messages.append("⏰ 予約分は `omnifuse post --run-queue` の実行時に投稿されます。")
+        messages.append("⏰ Scheduled posts will be sent when you run `omnifuse post --run-queue`.")
     return "\n".join(messages)
 
 
 def run_queue(config: dict) -> str:
-    """送信時刻を過ぎたキュー項目を投稿する。"""
+    """Publish queued items whose scheduled time has passed."""
     queue = _load_queue(config)
     if not queue:
-        return "キューは空です。"
+        return "The queue is empty."
     now = datetime.now()
     remaining, messages = [], []
     for item in queue:
@@ -318,11 +318,11 @@ def run_queue(config: dict) -> str:
             continue
         try:
             result = _post_now(config, item["platform"], item["content"])
-            messages.append(f"✅ {item['platform']}: 投稿しました（{result}）")
+            messages.append(f"✅ {item['platform']}: posted ({result})")
         except Exception as e:
-            logger.error("予約投稿に失敗: %s", e)
+            logger.error("Scheduled post failed: %s", e)
             remaining.append(item)
-            messages.append(f"❌ {item['platform']}: 失敗（再試行待ち）: {e}")
+            messages.append(f"❌ {item['platform']}: failed (will retry): {e}")
     _save_queue(config, remaining)
-    messages.append(f"残りのキュー: {len(remaining)}件")
+    messages.append(f"Items remaining in queue: {len(remaining)}")
     return "\n".join(messages)

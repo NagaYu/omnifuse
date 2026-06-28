@@ -1,50 +1,50 @@
 # ============================================================
-# OmniFuse 設定ファイル
-# 各機能はトークン未設定でも「ドライラン（下書き保存）」で動作します。
-# 詳しい設定手順は USER_GUIDE.md を参照してください。
+# OmniFuse configuration file
+# Every feature works even without tokens, in "dry-run" mode (drafts saved locally).
+# See USER_GUIDE.md for detailed setup steps.
 # ============================================================
 
 general:
-  output_dir: output     # 生成物の保存先
-  log_dir: logs          # ログの保存先
+  output_dir: output     # where generated files are saved
+  log_dir: logs          # where logs are saved
 
-# --- AI文章生成（任意）------------------------------------------
-# Claude APIキーを設定すると、文章作成・SNS投稿文の品質が向上します。
-# 未設定でも組み込みテンプレートで動作します。
+# --- AI text generation (optional) -----------------------------
+# Setting a Claude API key improves the quality of Tone Switcher and Multi Post.
+# Works with the built-in templates even if left empty.
 anthropic:
-  api_key: ""            # 例: sk-ant-xxxx（環境変数 ANTHROPIC_API_KEY でも可）
+  api_key: ""            # e.g. sk-ant-xxxx (the ANTHROPIC_API_KEY env var also works)
   model: claude-opus-4-8
 
-# --- 1. グラフ整形 [ChartPurify] --------------------------------
+# --- 1. Chart Purify [ChartPurify] ------------------------------
 chart:
-  accent_color: "#2563EB"   # アクセントカラー（青）
-  formats: [png, pdf]       # 出力形式
+  accent_color: "#2563EB"   # accent color (blue)
+  formats: [png, pdf]       # output formats
   dpi: 200
 
-# --- 2. 仕様書デプロイ [DocDeploy] ------------------------------
+# --- 2. Doc Deploy [DocDeploy] ----------------------------------
 docdeploy:
   target: notion            # notion | confluence | dryrun
   notion:
-    token: ""               # Notionインテグレーションのトークン（secret_xxx）
-    parent_page_id: ""      # デプロイ先の親ページID
+    token: ""               # Notion integration token (secret_xxx)
+    parent_page_id: ""      # parent page ID to deploy into
   confluence:
-    base_url: ""            # 例: https://yourcompany.atlassian.net/wiki
-    email: ""               # Atlassianアカウントのメールアドレス
-    api_token: ""           # AtlassianのAPIトークン
-    space_key: ""           # スペースキー（例: DEV）
+    base_url: ""            # e.g. https://yourcompany.atlassian.net/wiki
+    email: ""               # your Atlassian account email
+    api_token: ""           # your Atlassian API token
+    space_key: ""           # space key (e.g. DEV)
 
-# --- 3. 文章作成 [ToneSwitcher] ---------------------------------
+# --- 3. Tone Switcher [ToneSwitcher] ----------------------------
 tone:
-  sender_name: ""           # メールの差出人名（例: 株式会社〇〇 山田）
-  signature: ""             # メール署名
-  copy_to_clipboard: true   # 生成後にクリップボードへ自動コピー
+  sender_name: ""           # sender name for emails (e.g. Acme Inc. / Jane Doe)
+  signature: ""             # email signature
+  copy_to_clipboard: true   # automatically copy to the clipboard after generating
 
-# --- 4. SNS一括投稿 [MultiPost] ---------------------------------
+# --- 4. Multi Post [MultiPost] ----------------------------------
 multipost:
   x:
-    access_token: ""        # X API OAuth2.0ユーザートークン（tweet.write権限）
+    access_token: ""        # X API OAuth 2.0 user token (tweet.write scope)
   linkedin:
-    access_token: ""        # LinkedInアクセストークン（w_member_social権限）
-    author_urn: ""          # 例: urn:li:person:xxxxxxxx
+    access_token: ""        # LinkedIn access token (w_member_social scope)
+    author_urn: ""          # e.g. urn:li:person:xxxxxxxx
   qiita:
-    access_token: ""        # Qiita個人用アクセストークン（write_qiita権限）
+    access_token: ""        # Qiita personal access token (write_qiita scope)

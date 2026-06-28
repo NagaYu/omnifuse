@@ -1,8 +1,8 @@
-"""[ChartPurify] Excel/CSV をビジネス品質のグラフ (PDF/PNG) に自動整形する。
+"""[ChartPurify] Auto-format Excel/CSV into business-quality charts (PDF/PNG).
 
-- 配色: モノトーン + 青のアクセント
-- フォント: 游ゴシック（無ければ Hiragino Sans 等へ自動フォールバック)
-- 余白・グリッド・凡例を自動で最適化
+- Colors: a monochrome palette with a blue accent
+- Font: Yu Gothic (falls back automatically to Hiragino Sans, etc. if unavailable)
+- Margins, gridlines, and legend are optimized automatically
 """
 
 import logging
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import matplotlib
 
-matplotlib.use("Agg")  # GUI不要のバックエンド
+matplotlib.use("Agg")  # headless backend (no GUI required)
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
@@ -27,14 +27,14 @@ def _resolve_font(candidates: list[str]) -> str:
     for name in candidates:
         if name in installed:
             return name
-    logger.warning("候補フォントが見つからないため既定フォントで描画します")
+    logger.warning("None of the candidate fonts were found; using the default font")
     return plt.rcParams["font.family"][0] if plt.rcParams["font.family"] else "sans-serif"
 
 
 def load_table(input_path: str) -> pd.DataFrame:
     path = Path(input_path)
     if not path.is_file():
-        raise FileNotFoundError(f"入力ファイルが見つかりません: {input_path}")
+        raise FileNotFoundError(f"Input file not found: {input_path}")
     suffix = path.suffix.lower()
     if suffix in (".xlsx", ".xlsm", ".xls"):
         df = pd.read_excel(path)
@@ -43,20 +43,20 @@ def load_table(input_path: str) -> pd.DataFrame:
         try:
             df = pd.read_csv(path, sep=sep, encoding="utf-8-sig")
         except UnicodeDecodeError:
-            df = pd.read_csv(path, sep=sep, encoding="cp932")  # Excel由来のShift-JIS対策
+            df = pd.read_csv(path, sep=sep, encoding="cp932")  # fallback for legacy Shift-JIS from Excel
     else:
-        raise ValueError(f"未対応のファイル形式です（CSV/TSV/Excelに対応）: {suffix}")
+        raise ValueError(f"Unsupported file format (CSV/TSV/Excel supported): {suffix}")
     if df.empty:
-        raise ValueError("データが空です。中身のあるファイルを指定してください。")
+        raise ValueError("The data is empty. Please provide a file with content.")
     return df
 
 
 def _split_columns(df: pd.DataFrame) -> tuple[str, list[str]]:
-    """ラベル列（最初の非数値列）と数値列を自動判定する。"""
+    """Auto-detect the label column (first non-numeric) and the numeric columns."""
     numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
     label_cols = [c for c in df.columns if c not in numeric_cols]
     if not numeric_cols:
-        raise ValueError("グラフ化できる数値列が見つかりません。")
+        raise ValueError("No numeric columns to chart were found.")
     label_col = label_cols[0] if label_cols else None
     return label_col, numeric_cols
 
@@ -67,7 +67,7 @@ def purify(
     chart_type: str = "auto",
     title: str | None = None,
 ) -> list[Path]:
-    """データを読み込み、整形済みグラフをPNG/PDFで出力する。生成ファイルのパスを返す。"""
+    """Load the data and output formatted charts as PNG/PDF. Returns the generated file paths."""
     chart_cfg = config["chart"]
     df = load_table(input_path)
     label_col, numeric_cols = _split_columns(df)
@@ -95,7 +95,7 @@ def purify(
 
     accent = chart_cfg["accent_color"]
     monos = chart_cfg["mono_colors"]
-    # 先頭の系列を青のアクセント、以降をモノトーンに
+    # First series gets the blue accent; the rest get the monochrome palette
     colors = [accent] + [monos[i % len(monos)] for i in range(len(numeric_cols) - 1)]
 
     fig, ax = plt.subplots(figsize=(10, 5.6))
@@ -136,7 +136,7 @@ def purify(
 
     out_dir = ensure_output_dir(config) / "charts"
     out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # ミリ秒まで（上書き防止）
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # millisecond precision (avoid overwrites)
     base = f"{Path(input_path).stem}_{stamp}"
 
     outputs = []
@@ -144,6 +144,6 @@ def purify(
         out_path = out_dir / f"{base}.{fmt}"
         fig.savefig(out_path, dpi=chart_cfg["dpi"], format=fmt)
         outputs.append(out_path)
-        logger.info("グラフを出力しました: %s", out_path)
+        logger.info("Chart written: %s", out_path)
     plt.close(fig)
     return outputs

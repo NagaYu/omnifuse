@@ -1,4 +1,4 @@
-"""設定ファイル (config.yaml) の読み込みと既定値の管理"""
+"""Load the config file (config.yaml) and manage default values."""
 
 import os
 import copy
@@ -10,10 +10,11 @@ DEFAULT_CONFIG = {
     "general": {
         "output_dir": "output",
         "log_dir": "logs",
-        "language": "ja",
+        "language": "en",
     },
     "anthropic": {
-        # AI文章生成（任意）。空なら環境変数 ANTHROPIC_API_KEY → テンプレート方式の順で動作
+        # AI text generation (optional). If empty, falls back to the
+        # ANTHROPIC_API_KEY env var, then to template mode.
         "api_key": "",
         "model": "claude-opus-4-8",
     },
@@ -31,20 +32,20 @@ DEFAULT_CONFIG = {
         "target": "notion",  # notion | confluence | dryrun
         "notion": {"token": "", "parent_page_id": ""},
         "confluence": {
-            "base_url": "",  # 例: https://example.atlassian.net/wiki
+            "base_url": "",  # e.g. https://example.atlassian.net/wiki
             "email": "",
             "api_token": "",
             "space_key": "",
         },
     },
     "tone": {
-        "signature": "",      # メール署名（任意）
-        "sender_name": "",    # 差出人名（任意）
+        "signature": "",      # email signature (optional)
+        "sender_name": "",    # sender name (optional)
         "copy_to_clipboard": True,
     },
     "multipost": {
-        "x": {"access_token": ""},          # OAuth2.0 ユーザートークン (tweet.write)
-        "linkedin": {"access_token": "", "author_urn": ""},  # 例: urn:li:person:xxxx
+        "x": {"access_token": ""},          # OAuth 2.0 user token (tweet.write)
+        "linkedin": {"access_token": "", "author_urn": ""},  # e.g. urn:li:person:xxxx
         "qiita": {"access_token": ""},
         "queue_file": "output/post_queue.json",
     },
@@ -82,7 +83,7 @@ def load_config(path: str | None = None) -> dict:
                 user_config = yaml.safe_load(f) or {}
         except yaml.YAMLError as e:
             raise ValueError(
-                f"config.yaml の読み込みに失敗しました（YAML構文エラー）: {e}"
+                f"Failed to read config.yaml (YAML syntax error): {e}"
             ) from e
     config = _deep_merge(DEFAULT_CONFIG, user_config)
     config["_config_path"] = str(config_path) if config_path else ""

@@ -1,90 +1,90 @@
 @echo off
 rem ============================================================
-rem OmniFuse 一括環境構築スクリプト (Windows)
-rem 使い方:  setup.bat をダブルクリック、またはコマンドプロンプトで実行
+rem OmniFuse one-shot environment setup script (Windows)
+rem Usage:  double-click setup.bat, or run it in Command Prompt
 rem ============================================================
 setlocal
 cd /d "%~dp0"
 chcp 65001 >nul
 
 echo ============================================
-echo  OmniFuse セットアップを開始します
+echo  Starting OmniFuse setup
 echo ============================================
 
-rem --- 1. Python の確認 ---------------------------------------
+rem --- 1. Check Python ----------------------------------------
 set "PYTHON="
 where python >nul 2>nul && set "PYTHON=python"
 if not defined PYTHON (
     where py >nul 2>nul && set "PYTHON=py -3"
 )
 if not defined PYTHON (
-    echo [エラー] Python が見つかりません。
-    echo   https://www.python.org/downloads/ からインストールしてください。
-    echo   インストール時に「Add Python to PATH」へ必ずチェックを入れてください。
+    echo [ERROR] Python was not found.
+    echo   Install it from https://www.python.org/downloads/
+    echo   Be sure to check "Add Python to PATH" during installation.
     pause
     exit /b 1
 )
 %PYTHON% -c "import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)"
 if errorlevel 1 (
-    echo [エラー] Python 3.10 以上が必要です。
+    echo [ERROR] Python 3.10 or later is required.
     pause
     exit /b 1
 )
-echo [OK] Python を検出しました
+echo [OK] Detected Python
 
-rem --- 2. 仮想環境の作成 ---------------------------------------
+rem --- 2. Create the virtual environment ----------------------
 if not exist ".venv" (
-    echo 仮想環境 (.venv) を作成しています...
+    echo Creating the virtual environment (.venv)...
     %PYTHON% -m venv .venv
     if errorlevel 1 (
-        echo [エラー] 仮想環境の作成に失敗しました。
+        echo [ERROR] Failed to create the virtual environment.
         pause
         exit /b 1
     )
 )
 set "VENV_PY=.venv\Scripts\python.exe"
 
-rem --- 3. 依存ライブラリの一括インストール ----------------------
-echo 依存ライブラリをインストールしています（数分かかる場合があります）...
+rem --- 3. Install dependencies in one go ----------------------
+echo Installing dependencies (this may take a few minutes)...
 "%VENV_PY%" -m pip install --upgrade pip --quiet
 "%VENV_PY%" -m pip install -r requirements.txt --quiet
 if errorlevel 1 (
-    echo [エラー] ライブラリのインストールに失敗しました。
-    echo   ネットワーク接続を確認して再実行してください。
+    echo [ERROR] Failed to install libraries.
+    echo   Check your network connection and try again.
     pause
     exit /b 1
 )
-echo [OK] 依存ライブラリをインストールしました
+echo [OK] Installed dependencies
 
-rem --- 4. 動作チェック ------------------------------------------
+rem --- 4. Sanity check ----------------------------------------
 "%VENV_PY%" -c "import pandas, openpyxl, matplotlib, requests, yaml, omnifuse.cli"
 if errorlevel 1 (
-    echo [エラー] 動作チェックに失敗しました。
+    echo [ERROR] The sanity check failed.
     pause
     exit /b 1
 )
-echo [OK] すべての依存ライブラリが正常に読み込めました
+echo [OK] All dependencies imported successfully
 
-rem --- 5. 設定ファイルと起動コマンドの作成 ------------------------
+rem --- 5. Prepare the config file and launch command ----------
 if not exist "config.yaml" if exist "config.example.yaml" (
     copy /y config.example.yaml config.yaml >nul
-    echo [OK] config.example.yaml から config.yaml を作成しました
+    echo [OK] Created config.yaml from config.example.yaml
 )
 (
     echo @echo off
     echo "%%~dp0.venv\Scripts\python.exe" -m omnifuse %%*
 ) > omnifuse.bat
-echo [OK] 起動コマンド omnifuse.bat を作成しました
+echo [OK] Created the launch command omnifuse.bat
 
 echo.
 echo ============================================
-echo  セットアップが完了しました！
+echo  Setup complete!
 echo ============================================
 echo.
-echo  使い方:
-echo    omnifuse              ... 対話メニューを起動
-echo    omnifuse chart data.csv   ... グラフ整形
-echo    omnifuse tone report.md   ... 文章3トーン生成
+echo  Usage:
+echo    omnifuse              ... launch the interactive menu
+echo    omnifuse chart data.csv   ... format a chart
+echo    omnifuse tone report.md   ... generate 3 tones of text
 echo.
-echo  APIキーの設定方法は USER_GUIDE.md をご覧ください。
+echo  See USER_GUIDE.md for how to configure API keys.
 pause

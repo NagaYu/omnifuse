@@ -1,7 +1,7 @@
-"""Claude APIによる文章生成（任意機能）。
+"""Text generation via the Claude API (optional feature).
 
-APIキーが設定されていれば高品質なAI生成、なければ None を返して
-呼び出し側がテンプレート方式へフォールバックする。
+If an API key is configured, generate high-quality text with AI; otherwise
+return None so the caller falls back to template mode.
 """
 
 import logging
@@ -22,7 +22,7 @@ def is_available(config: dict) -> bool:
 
 
 def generate(config: dict, system: str, prompt: str, max_tokens: int = 4000) -> str | None:
-    """Claude APIでテキストを生成する。利用不可・失敗時は None。"""
+    """Generate text with the Claude API. Returns None if unavailable or on failure."""
     if not is_available(config):
         return None
     try:
@@ -36,6 +36,6 @@ def generate(config: dict, system: str, prompt: str, max_tokens: int = 4000) -> 
             messages=[{"role": "user", "content": prompt}],
         )
         return "".join(b.text for b in response.content if b.type == "text").strip()
-    except Exception as e:  # APIエラー時はテンプレートへフォールバック
-        logger.warning("Claude API呼び出しに失敗したためテンプレート方式で続行します: %s", e)
+    except Exception as e:  # fall back to templates on API error
+        logger.warning("Claude API call failed; continuing in template mode: %s", e)
         return None

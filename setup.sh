@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
-# OmniFuse 一括環境構築スクリプト (macOS / Linux)
-# 使い方:  bash setup.sh
+# OmniFuse one-shot environment setup script (macOS / Linux)
+# Usage:  bash setup.sh
 # ============================================================
 set -u
 
@@ -13,10 +13,10 @@ warn() { printf "${YELLOW}⚠️  %s${NC}\n" "$1"; }
 err()  { printf "${RED}❌ %s${NC}\n" "$1"; }
 
 echo "============================================"
-echo " OmniFuse セットアップを開始します"
+echo " Starting OmniFuse setup"
 echo "============================================"
 
-# --- 1. Python の確認 ---------------------------------------
+# --- 1. Check Python ----------------------------------------
 PYTHON=""
 for cmd in python3 python; do
   if command -v "$cmd" >/dev/null 2>&1; then
@@ -24,49 +24,49 @@ for cmd in python3 python; do
     major=${version%%.*}; minor=${version##*.}
     if [ "$major" -ge 3 ] && [ "$minor" -ge 10 ]; then
       PYTHON="$cmd"
-      ok "Python $version を検出しました ($cmd)"
+      ok "Detected Python $version ($cmd)"
       break
     fi
   fi
 done
 if [ -z "$PYTHON" ]; then
-  err "Python 3.10 以上が見つかりません。"
-  echo "   https://www.python.org/downloads/ からインストール後、再実行してください。"
+  err "Python 3.10 or later was not found."
+  echo "   Install it from https://www.python.org/downloads/ and run this again."
   exit 1
 fi
 
-# --- 2. 仮想環境の作成 ---------------------------------------
-# フォルダ名に ":" が含まれると venv を作成できないため、
-# その場合はホームディレクトリ側に作成する
+# --- 2. Create the virtual environment ----------------------
+# A folder name containing ":" prevents venv creation, so in that case
+# create it under the home directory instead.
 case "$(pwd)" in
   *:*) VENV_DIR="$HOME/.omnifuse/venv"
-       warn "フォルダ名に ':' が含まれるため、仮想環境を $VENV_DIR に作成します" ;;
+       warn "Folder name contains ':', so the virtual environment will be created at $VENV_DIR" ;;
   *)   VENV_DIR="$(pwd)/.venv" ;;
 esac
 
 if [ ! -d "$VENV_DIR" ]; then
-  echo "📦 仮想環境を作成しています..."
+  echo "📦 Creating the virtual environment..."
   mkdir -p "$(dirname "$VENV_DIR")"
-  "$PYTHON" -m venv "$VENV_DIR" || { err "仮想環境の作成に失敗しました"; exit 1; }
-  ok "仮想環境を作成しました: $VENV_DIR"
+  "$PYTHON" -m venv "$VENV_DIR" || { err "Failed to create the virtual environment"; exit 1; }
+  ok "Created the virtual environment: $VENV_DIR"
 else
-  ok "既存の仮想環境を使用します: $VENV_DIR"
+  ok "Using the existing virtual environment: $VENV_DIR"
 fi
 
 VENV_PY="$VENV_DIR/bin/python"
 
-# --- 3. 依存ライブラリの一括インストール ----------------------
-echo "📦 依存ライブラリをインストールしています（数分かかる場合があります）..."
+# --- 3. Install dependencies in one go ----------------------
+echo "📦 Installing dependencies (this may take a few minutes)..."
 "$VENV_PY" -m pip install --upgrade pip --quiet
 if "$VENV_PY" -m pip install -r requirements.txt --quiet; then
-  ok "依存ライブラリをインストールしました"
+  ok "Installed dependencies"
 else
-  err "ライブラリのインストールに失敗しました。ネットワーク接続を確認して再実行してください。"
+  err "Failed to install libraries. Check your network connection and try again."
   exit 1
 fi
 
-# --- 4. 依存関係の自動チェック --------------------------------
-echo "🔍 動作チェックを実行しています..."
+# --- 4. Auto-check the dependencies -------------------------
+echo "🔍 Running a sanity check..."
 if "$VENV_PY" - <<'EOF'
 import importlib, sys
 missing = []
@@ -78,23 +78,23 @@ for mod in ("pandas", "openpyxl", "matplotlib", "requests", "yaml"):
 if missing:
     print("missing:", ", ".join(missing))
     sys.exit(1)
-import omnifuse.cli  # CLI本体の読み込み確認
+import omnifuse.cli  # confirm the CLI itself imports
 EOF
 then
-  ok "すべての依存ライブラリが正常に読み込めました"
+  ok "All dependencies imported successfully"
 else
-  err "動作チェックに失敗しました。上記のエラー内容をご確認ください。"
+  err "The sanity check failed. Please review the error above."
   exit 1
 fi
 
-# --- 5. 設定ファイルと起動コマンドの準備 ----------------------
+# --- 5. Prepare the config file and launch command ----------
 if [ ! -f "config.yaml" ] && [ -f "config.example.yaml" ]; then
   cp config.example.yaml config.yaml
-  ok "config.example.yaml から config.yaml を作成しました"
+  ok "Created config.yaml from config.example.yaml"
 elif [ -f "config.yaml" ]; then
-  ok "設定ファイル config.yaml を確認しました"
+  ok "Found the config file config.yaml"
 else
-  warn "config.yaml が見つかりません（既定設定で動作します）"
+  warn "config.yaml not found (running with default settings)"
 fi
 
 cat > omnifuse.sh <<EOF
@@ -104,16 +104,16 @@ cd "\$DIR"
 exec "$VENV_PY" -m omnifuse "\$@"
 EOF
 chmod +x omnifuse.sh
-ok "起動コマンド ./omnifuse.sh を作成しました"
+ok "Created the launch command ./omnifuse.sh"
 
 echo ""
 echo "============================================"
-echo " 🎉 セットアップが完了しました！"
+echo " 🎉 Setup complete!"
 echo "============================================"
 echo ""
-echo " 使い方:"
-echo "   ./omnifuse.sh              … 対話メニューを起動"
-echo "   ./omnifuse.sh chart data.csv   … グラフ整形"
-echo "   ./omnifuse.sh tone report.md   … 文章3トーン生成"
+echo " Usage:"
+echo "   ./omnifuse.sh              … launch the interactive menu"
+echo "   ./omnifuse.sh chart data.csv   … format a chart"
+echo "   ./omnifuse.sh tone report.md   … generate 3 tones of text"
 echo ""
-echo " APIキーの設定方法は USER_GUIDE.md をご覧ください。"
+echo " See USER_GUIDE.md for how to configure API keys."

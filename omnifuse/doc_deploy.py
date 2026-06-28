@@ -1,8 +1,8 @@
-"""[DocDeploy] Gitコミットログ / Markdown を仕様書ページに変換し、
-Notion / Confluence へAPI経由で自動デプロイする。
+"""[DocDeploy] Convert Git commit logs / Markdown into spec pages and
+auto-deploy them to Notion / Confluence via their APIs.
 
-トークン未設定時はドライランとして、送信予定のペイロードと
-プレビュー用Markdownをローカルに保存する。
+When no token is configured, it runs as a dry-run, saving the payload to be
+sent and a preview Markdown file locally.
 """
 
 import json
@@ -21,10 +21,10 @@ logger = logging.getLogger("omnifuse")
 NOTION_VERSION = "2022-06-28"
 
 
-# ---------------------------------------------------------------- 入力の解析
+# ---------------------------------------------------------------- input parsing
 
 def collect_git_log(repo_path: str = ".", limit: int = 30) -> str:
-    """GitコミットログをMarkdownに変換する。"""
+    """Convert the Git commit log into Markdown."""
     try:
         result = subprocess.run(
             ["git", "-C", repo_path, "log", f"-{limit}",
@@ -32,13 +32,13 @@ def collect_git_log(repo_path: str = ".", limit: int = 30) -> str:
             capture_output=True, text=True, timeout=30,
         )
     except FileNotFoundError:
-        raise RuntimeError("git コマンドが見つかりません。Gitをインストールしてください。")
+        raise RuntimeError("The 'git' command was not found. Please install Git.")
     if result.returncode != 0:
         raise RuntimeError(
-            f"Gitログの取得に失敗しました（Gitリポジトリ内で実行していますか？）: "
+            f"Failed to read the Git log (are you running inside a Git repository?): "
             f"{result.stderr.strip()}"
         )
-    lines = ["# 更新履歴（コミットログ）", ""]
+    lines = ["# Changelog (commit log)", ""]
     current_date = None
     for raw in result.stdout.strip().splitlines():
         parts = raw.split("|", 3)
@@ -48,12 +48,12 @@ def collect_git_log(repo_path: str = ".", limit: int = 30) -> str:
         if date != current_date:
             lines.append(f"## {date}")
             current_date = date
-        lines.append(f"- {subject}（{author} / `{sha}`）")
+        lines.append(f"- {subject} ({author} / `{sha}`)")
     return "\n".join(lines)
 
 
 def parse_markdown(md_text: str) -> list[dict]:
-    """Markdownを簡易ブロック構造（heading/paragraph/bullet/code）へ分解する。"""
+    """Break Markdown into a simple block structure (heading/paragraph/bullet/code)."""
     blocks = []
     in_code = False
     code_lines: list[str] = []
@@ -80,7 +80,7 @@ def parse_markdown(md_text: str) -> list[dict]:
                            "text": re.sub(r"^\s*[-*]\s+", "", line).strip()})
         elif line.strip():
             blocks.append({"type": "paragraph", "text": line.strip()})
-    if in_code and code_lines:  # 閉じ忘れのコードブロックも救済
+    if in_code and code_lines:  # also rescue an unclosed code block
         blocks.append({"type": "code", "text": "\n".join(code_lines),
                        "language": code_lang or "plain text"})
     return blocks
@@ -92,12 +92,12 @@ def _strip_inline_md(text: str) -> str:
     return text
 
 
-# ------------------------------------------------------------ Notion へ変換
+# ------------------------------------------------------------ convert to Notion
 
 def to_notion_blocks(blocks: list[dict]) -> list[dict]:
     notion_blocks = []
     for b in blocks:
-        text = _strip_inline_md(b["text"])[:2000]  # Notionのrich_text上限対策
+        text = _strip_inline_md(b["text"])[:2000]  # respect Notion's rich_text limit
         rich = [{"type": "text", "text": {"content": text}}]
         if b["type"].startswith("heading_"):
             notion_blocks.append({
@@ -119,7 +119,7 @@ def to_notion_blocks(blocks: list[dict]) -> list[dict]:
                 "object": "block", "type": "paragraph",
                 "paragraph": {"rich_text": rich},
             })
-    return notion_blocks[:100]  # Notion APIの1リクエスト上限
+    return notion_blocks[:100]  # Notion API's per-request limit
 
 
 def deploy_to_notion(title: str, blocks: list[dict], cfg: dict) -> str:
@@ -138,11 +138,11 @@ def deploy_to_notion(title: str, blocks: list[dict], cfg: dict) -> str:
         json=payload, timeout=30,
     )
     if resp.status_code >= 400:
-        raise RuntimeError(f"Notion APIエラー ({resp.status_code}): {resp.text[:300]}")
-    return resp.json().get("url", "(URL不明)")
+        raise RuntimeError(f"Notion API error ({resp.status_code}): {resp.text[:300]}")
+    return resp.json().get("url", "(URL unknown)")
 
 
-# -------------------------------------------------------- Confluence へ変換
+# -------------------------------------------------------- convert to Confluence
 
 def to_confluence_storage(blocks: list[dict]) -> str:
     import html
@@ -190,12 +190,12 @@ def deploy_to_confluence(title: str, blocks: list[dict], cfg: dict) -> str:
         json=payload, timeout=30,
     )
     if resp.status_code >= 400:
-        raise RuntimeError(f"Confluence APIエラー ({resp.status_code}): {resp.text[:300]}")
+        raise RuntimeError(f"Confluence API error ({resp.status_code}): {resp.text[:300]}")
     data = resp.json()
     return base + data.get("_links", {}).get("webui", "")
 
 
-# ---------------------------------------------------------------- エントリ
+# ---------------------------------------------------------------- entry point
 
 def deploy(
     config: dict,
@@ -203,13 +203,13 @@ def deploy(
     md_path: str | None = None,
     title: str | None = None,
 ) -> str:
-    """仕様書を生成してデプロイする。戻り値は結果メッセージ。"""
+    """Generate a spec and deploy it. Returns a result message."""
     if source == "git":
         md_text = collect_git_log()
-        title = title or f"更新履歴 {datetime.now():%Y-%m-%d}"
+        title = title or f"Changelog {datetime.now():%Y-%m-%d}"
     else:
         if not md_path or not Path(md_path).is_file():
-            raise FileNotFoundError(f"Markdownファイルが見つかりません: {md_path}")
+            raise FileNotFoundError(f"Markdown file not found: {md_path}")
         md_text = Path(md_path).read_text(encoding="utf-8")
         first_heading = re.search(r"^#\s+(.+)", md_text, re.M)
         title = title or (first_heading.group(1).strip() if first_heading
@@ -217,19 +217,19 @@ def deploy(
 
     blocks = parse_markdown(md_text)
     if not blocks:
-        raise ValueError("変換できる内容がありませんでした。")
+        raise ValueError("There was no content to convert.")
 
     dd = config["docdeploy"]
     target = dd.get("target", "dryrun")
 
     if target == "notion" and dd["notion"].get("token") and dd["notion"].get("parent_page_id"):
         url = deploy_to_notion(title, blocks, dd["notion"])
-        return f"✅ Notionへデプロイしました: {url}"
+        return f"✅ Deployed to Notion: {url}"
     if target == "confluence" and dd["confluence"].get("api_token"):
         url = deploy_to_confluence(title, blocks, dd["confluence"])
-        return f"✅ Confluenceへデプロイしました: {url}"
+        return f"✅ Deployed to Confluence: {url}"
 
-    # ドライラン: ペイロードとプレビューを保存
+    # Dry-run: save the payload and a preview
     out_dir = ensure_output_dir(config) / "docs"
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -241,8 +241,8 @@ def deploy(
         encoding="utf-8",
     )
     return (
-        "ℹ️ APIトークン未設定のためドライランで保存しました。\n"
-        f"   プレビュー: {preview}\n"
-        f"   Notion用ペイロード: {payload_file}\n"
-        "   config.yaml の docdeploy セクションにトークンを設定すると自動デプロイされます。"
+        "ℹ️ No API token configured, so this was saved as a dry-run.\n"
+        f"   Preview: {preview}\n"
+        f"   Notion payload: {payload_file}\n"
+        "   Set a token in the docdeploy section of config.yaml to deploy automatically."
     )

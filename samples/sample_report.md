@@ -1,10 +1,10 @@
-# 顧客管理システム リプレイス作業
+# Customer Management System Replacement
 
-本日、顧客管理システムのリプレイス作業がすべて完了しました。データ移行も検証済みで、欠損はゼロです。
+Today, the replacement of the customer management system was fully completed. Data migration has been verified, with zero data loss.
 
-- 旧システムから新システムへ顧客データ12,000件を移行
-- ログイン認証を二要素認証に強化
-- 帳票出力の速度を約3倍に改善
-- 操作マニュアルを刷新して社内ポータルに掲載
+- Migrated 12,000 customer records from the old system to the new one
+- Strengthened login authentication with two-factor authentication
+- Improved report output speed by about 3x
+- Revamped the operations manual and published it on the internal portal
 
-来週月曜から全部署で新システムの利用を開始できます。
+All departments can start using the new system next Monday.
