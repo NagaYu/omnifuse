@@ -4,13 +4,13 @@ __pycache__/
 output/
 logs/
 
-# APIキーを含むためコミット禁止（config.example.yaml を雛形として使用）
+# Contains API keys; do not commit (use config.example.yaml as the template)
 config.yaml
 
-# セットアップ時に自動生成されるもの
+# Generated during setup
 omnifuse.sh
 omnifuse.bat
 .DS_Store
 
-# Claude Codeのローカル設定
+# Claude Code local settings
 .claude/
